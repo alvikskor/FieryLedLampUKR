@@ -16,5 +16,3 @@ Led lamp with web interface and Ukrainian language
 Будь-якої миті його можна буде поміняти, або він сам зміниться.
 
 Дякую @Stepko за допомогу у перекладі текстових файлів українською мовою.
-
-Обговорення вихідного і цього проектів тут: https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-ot-gunner47.2418/page-205#post-73929
