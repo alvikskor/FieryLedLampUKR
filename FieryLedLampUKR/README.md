@@ -15,6 +15,6 @@ Led lamp with web interface and Ukrainian language
 У цій прошивці режим роботи ESP_MODE 1 (з роутером) або ESP_MODE 0 (без (точка доступу)).
 Будь-якої миті його можна буде поміняти, або він сам зміниться.
 
-Дякую @Stepko за допомогу у перекладі текстових файлів.
+Дякую @Stepko за допомогу у перекладі текстових файлів українською мовою.
 
 Обговорення вихідного і цього проектів тут: https://community.alexgyver.ru/threads/wifi-lampa-budilnik-obsuzhdenie-proshivki-ot-gunner47.2418/page-205#post-73929
