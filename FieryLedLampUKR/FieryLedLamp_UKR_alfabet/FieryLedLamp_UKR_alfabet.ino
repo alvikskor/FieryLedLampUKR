@@ -199,6 +199,7 @@ uint8_t ml1, ml2, ml3;
 
 #ifdef MP3_TX_PIN
 #define mp3_delay 100                // Задержка между командами плееру
+uint8_t mp3_folder=1;                // Текущая папка для воспроизведения.
 uint8_t alarm_sound_on =false;       // Включить/выключить звук будильника
 uint8_t alarm_volume;                // Громкость будильника
 bool alarm_sound_flag =false;        // проигрывается ли сейчас будильник
@@ -242,6 +243,9 @@ uint32_t tmr_blink = 0;              // +++ таймер плавного изм
 TM1637Display display(CLK, DIO);     // +++ подключаем дисплей
 bool aDirection = false;             // +++ Направление изменения яркрсти
 #endif  //TM1637_USE
+#ifdef GENERAL_DEBUG
+uint32_t mem_timer;
+#endif //GENERAL_DEBUG 
 
 
 void setup()  //==================================================================  void setup()  =========================================================================
@@ -563,6 +567,10 @@ void setup()  //================================================================
   delay (100);
   
   my_timer=millis();
+  
+  #ifdef GENERAL_DEBUG
+   mem_timer = millis();
+  #endif //GENERAL_DEBUG 
 }
 
 
@@ -667,6 +675,14 @@ do {	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=========
  if (Painting == 0) {
 
   effectsTick();
+  
+  #ifdef GENERAL_DEBUG
+   if (millis() - mem_timer > 10000UL) {
+       mem_timer = millis();
+       LOG.print ("Heap Size = ");
+       LOG.println(system_get_free_heap_size());
+   }
+  #endif //GENERAL_DEBUG 
 
   EepromManager::HandleEepromTick(&settChanged, &eepromTimeout, &ONflag, 
     &currentMode, modes, &(FavoritesManager::SaveFavoritesToEeprom));

@@ -249,7 +249,9 @@ void noTimeClear(){
 #endif //WARNING_IF_NO_TIME
 
 void Eff_Tick () {
+    #ifdef MP3_TX_PIN
     mp3_folder=effects_folders[currentMode];
+    #endif  //MP3_TX_PIN
     FastLED.show();
       #ifdef USE_MULTIPLE_LAMPS_CONTROL
       if (repeat_multiple_lamp_control)  {
@@ -261,5 +263,4 @@ void Eff_Tick () {
           repeat_multiple_lamp_control = false;
       }
       #endif  //USE_MULTIPLE_LAMPS_CONTROL
-
 }

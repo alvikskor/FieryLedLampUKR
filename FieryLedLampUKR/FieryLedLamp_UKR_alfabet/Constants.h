@@ -43,7 +43,7 @@ uint32_t AUTOMATIC_OFF_TIME = (5 * 60UL * 60UL * 1000UL);   // Не удаляй
 
 //#define MP3_DEBUG                                         // если строка не закомментирована, будут выводиться отладочные сообщения mp3 player
 
-#define GENERAL_DEBUG                                     // если строка не закомментирована, будут выводиться общие отладочные сообщения
+//#define GENERAL_DEBUG                                     // если строка не закомментирована, будут выводиться общие отладочные сообщения
 
 //#define EFFECT_REESTR_LENGTH                              // Раскоментировать ету строку и строку #define GENERAL_DEBUG для вывода строк efList_n и их длинны в монитор (использовать только для отладки)
 
@@ -670,4 +670,4 @@ String readFile(String fileName, size_t len ) {
 void multiple_lamp_control ();
 #endif  //USE_MULTIPLE_LAMPS_CONTROL
 
-uint8_t mp3_folder=1;    // Текущая папка для воспроизведения. НЕЛЬЗЯ ЗАСОВЫВАТЬ ПОД  #ifdef MP3_TX_PIN Используется в effectTicker.ino
+// uint8_t mp3_folder=1;    // Текущая папка для воспроизведения. НЕЛЬЗЯ ЗАСОВЫВАТЬ ПОД  #ifdef MP3_TX_PIN Используется в effectTicker.ino
