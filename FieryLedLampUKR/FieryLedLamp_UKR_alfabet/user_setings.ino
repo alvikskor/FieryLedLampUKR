@@ -153,6 +153,17 @@ void handle_run_text ()  {
     timeout_save_file_changes = millis();
     bitSet (save_file_changes, 0);
     (jsonRead(configSetup, "run_text")).toCharArray (TextTicker, (jsonRead(configSetup, "run_text")).length()+1);
+    #ifdef GENERAL_DEBUG
+    LOG.print("\nTextTicker = ");
+    uint8_t i=0;
+    while (TextTicker[i]!=0)
+    {
+        LOG.print (TextTicker[i],HEX);
+        LOG.print (' ');
+        i++;
+    }
+    LOG.println();
+    #endif
 	HTTP.send(200, "text/plain", "OK"); // отправляем ответ о выполнении
  }
 
