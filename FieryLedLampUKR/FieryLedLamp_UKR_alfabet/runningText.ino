@@ -40,7 +40,7 @@ boolean fillString(const char* text, CRGB letterColor, boolean itsText)
       }
       else
       {
-        drawLetter(text[i], offset + j * (LET_WIDTH + SPACE), letterColor);
+        drawLetter(text[i-1], text[i], offset + j * (LET_WIDTH + SPACE), letterColor);
         i++;
         j++;
       }
@@ -190,7 +190,7 @@ uint8_t getBrightnessForPrintTime(uint32_t thisTime, bool ONflag)     // опр�
 }
 
 
-void drawLetter(uint8_t letter, int8_t offset, CRGB letterColor)
+void drawLetter(uint8_t subleter, uint8_t letter, int8_t offset, CRGB letterColor)
 {
  
   uint8_t start_pos = 0, finish_pos = LET_WIDTH;
@@ -212,11 +212,11 @@ void drawLetter(uint8_t letter, int8_t offset, CRGB letterColor)
     uint8_t thisByte;
     if (MIRR_V)
     {
-      thisByte = getFont(letter, (uint8_t)(LET_WIDTH - 1 - i));
+      thisByte = getFont(subleter, letter, (uint8_t)(LET_WIDTH - 1 - i));
     }
     else
     {
-      thisByte = getFont(letter, i);
+      thisByte = getFont(subleter, letter, i);
     }
 
     for (uint8_t j = 0; j < LET_HEIGHT; j++)
@@ -254,21 +254,61 @@ void drawLetter(uint8_t letter, int8_t offset, CRGB letterColor)
 
 
 // --- СЛУЖЕБНЫЕ ФУНКЦИИ ---------------
-uint8_t getFont(uint8_t asciiCode, uint8_t row)             // интерпретатор кода символа в массиве fontHEX (для Arduino IDE 1.8.* и выше)
+uint8_t getFont(uint8_t subasciiCode, uint8_t asciiCode, uint8_t row)             // интерпретатор кода символа в массиве fontHEX (для Arduino IDE 1.8.* и выше)
 {
   asciiCode = asciiCode - '0' + 16;                         // перевод код символа из таблицы ASCII в номер согласно нумерации массива
 
-  if (asciiCode <= 90)                                      // печатаемые символы и английские буквы
+  if (asciiCode <= 94)                                      // печатаемые символы и английские буквы
   {
     return pgm_read_byte(&fontHEX[asciiCode][row]);
   }
-  else if (asciiCode >= 112 && asciiCode <= 159)
+  else if (asciiCode >= 112 && asciiCode <= 159 && subasciiCode == 0xD0)  // А - Я а - п
   {
     return pgm_read_byte(&fontHEX[asciiCode - 17][row]);
   }
-  else if (asciiCode >= 96 && asciiCode <= 111)
+  else if (asciiCode >= 96 && asciiCode <= 111 && subasciiCode == 0xD1) // р - я
   {
     return pgm_read_byte(&fontHEX[asciiCode + 47][row]);
+  }
+  else if (asciiCode == 97 && subasciiCode == 0xD0)  // Ё
+  {
+    return pgm_read_byte(&fontHEX[159][row]);//return pgm_read_byte(&fontHEX[asciiCode + 62][row]);
+  }
+  else if (asciiCode == 113 && subasciiCode == 0xD1)  // ё
+  {
+    return pgm_read_byte(&fontHEX[163][row]); 
+  }
+  else if (asciiCode == 100 && subasciiCode == 0xD0)  // Є
+  {
+    return pgm_read_byte(&fontHEX[160][row]);
+  }
+  else if (asciiCode == 116 && subasciiCode == 0xD1)  // є
+  {
+    return pgm_read_byte(&fontHEX[164][row]);
+  }
+  else if (asciiCode == 102 && subasciiCode == 0xD0)  // І
+  {
+    return pgm_read_byte(&fontHEX[161][row]);
+  }
+  else if (asciiCode == 118 && subasciiCode == 0xD1)  // і
+  {
+    return pgm_read_byte(&fontHEX[165][row]);
+  }
+  else if (asciiCode == 103 && subasciiCode == 0xD0)  // Ї
+  {
+    return pgm_read_byte(&fontHEX[162][row]);
+  }
+  else if (asciiCode == 119 && subasciiCode == 0xD1)  // ї
+  {
+    return pgm_read_byte(&fontHEX[166][row]);
+  }
+  else if (asciiCode == 117 && subasciiCode == 0xD2)  // Г
+  {
+    return pgm_read_byte(&fontHEX[167][row]);
+  }
+  else if (asciiCode == 118 && subasciiCode == 0xD2)  // г
+  {
+    return pgm_read_byte(&fontHEX[168][row]);
   }
 
   return 0;
