@@ -4692,7 +4692,7 @@ void rain(byte backgroundDepth, byte maxBrightness, byte spawnFreq, byte tailLen
       // ESP32 does not like static arrays  https://github.com/espressif/arduino-esp32/issues/2567
       uint8_t *lightning = (uint8_t *) malloc(WIDTH * HEIGHT);
       while (lightning == NULL) {
-        Serial.println("lightning malloc failed");
+        //Serial.println("lightning malloc failed");
       }
 
 
@@ -4741,7 +4741,7 @@ void rain(byte backgroundDepth, byte maxBrightness, byte spawnFreq, byte tailLen
       static uint8_t *noise = (uint8_t *) malloc(WIDTH * cloudHeight);
 
       while (noise == NULL) {
-        Serial.println("noise malloc failed");
+        //Serial.println("noise malloc failed");
       }
       int xoffset = noiseScale * x + hue;
 

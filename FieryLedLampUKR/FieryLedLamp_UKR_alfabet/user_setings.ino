@@ -59,9 +59,10 @@ void User_setings ()  {
  HTTP.on("/on_night_adv", handle_night_advert_on_sound);  // Включить/Выключить озвучивание времени ночью
  HTTP.on("/day_vol", handle_day_advert_volume);  // Громкость озвучивания времени днём
  HTTP.on("/night_vol", handle_night_advert_volume);  // Громкость озвучивания времени ночью
- HTTP.on("/sound_set", handle_sound_set);  // Выбор папок для озвучивания эффектов
- HTTP.on("/track_down", handle_track_down);  // Попередній трек у папці
- HTTP.on("/track_up", handle_track_up);  // Наступний трек у папці
+ HTTP.on("/sound_set", handle_sound_set);  // Вибір прив'язаних папок для озвучування ефектів
+ HTTP.on("/track_down", handle_folder_down);  // Попередня папка
+ HTTP.on("/track_up", handle_folder_up);  // Наступна папка
+ HTTP.on("/fold_sel", handle_folder_select);  // Вибір папки озвучування на головній сторінці
  HTTP.on("/eq", handle_equalizer);  // Еквалайзер
  #endif
 
@@ -161,7 +162,7 @@ void handle_run_text ()  {
     uint8_t i=0;
     while (TextTicker[i]!=0)
     {
-        LOG.print (TextTicker[i],HEX);
+        LOG.print (F(TextTicker[i],HEX));
         LOG.print (' ');
         i++;
     }
@@ -997,7 +998,7 @@ void handle_on_sound ()   {
 void handle_volume ()   {
     eff_volume = HTTP.arg("vol").toInt();
     jsonWrite(configSetup, "vol", eff_volume);
-    if (!dawnflag_sound) send_command(6,0,0,eff_volume); //Громкость
+    if (!dawnflag_sound) send_command(6,FEEDBACK,0,eff_volume); //Громкость
     timeout_save_file_changes = millis();
     bitSet (save_file_changes, 0);
     HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
@@ -1014,7 +1015,7 @@ void handle_alarm_on_sound ()   {
 void handle_alarm_volume ()   {
     alarm_volume = HTTP.arg("alm_vol").toInt();
     jsonWrite(configSetup, "alm_vol", alarm_volume);
-    if (dawnflag_sound && alarm_sound_on) send_command(6,0,0,alarm_volume); //Громкость
+    if (dawnflag_sound && alarm_sound_on) send_command(6,FEEDBACK,0,alarm_volume); //Громкость
     timeout_save_file_changes = millis();
     bitSet (save_file_changes, 0);
     HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
@@ -1039,7 +1040,7 @@ void handle_night_advert_on_sound ()   {
 void handle_day_advert_volume ()   {
     day_advert_volume = HTTP.arg("day_vol").toInt();
     jsonWrite(configSetup, "day_vol", day_advert_volume);
-    if (advert_flag && day_advert_sound_on) send_command(6,0,0,day_advert_volume); //Громкость
+    if (advert_flag && day_advert_sound_on) send_command(6,FEEDBACK,0,day_advert_volume); //Громкость
     timeout_save_file_changes = millis();
     bitSet (save_file_changes, 0);
     HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
@@ -1048,7 +1049,7 @@ void handle_day_advert_volume ()   {
 void handle_night_advert_volume ()   {
     night_advert_volume = HTTP.arg("night_vol").toInt();
     jsonWrite(configSetup, "night_vol", night_advert_volume);
-    if (advert_flag && night_advert_sound_on) send_command(6,0,0,night_advert_volume); //Громкость
+    if (advert_flag && night_advert_sound_on) send_command(6,FEEDBACK,0,night_advert_volume); //Громкость
     timeout_save_file_changes = millis();
     bitSet (save_file_changes, 0);
     HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
@@ -1091,21 +1092,44 @@ void handle_sound_set ()   {    // Выбор папок для озвучива
     HTTP.send(200, "text/plain", "OK");
 }
 
-void handle_track_down ()   {
-    send_command(0x02,0,0,0);  // Попередній трек
-    HTTP.send(200, "text/plain", "OK");    
+void handle_folder_down ()   {
+    CurrentFolder = constrain(CurrentFolder-1, 1, 99);
+    jsonWrite(configSetup, "fold_sel", CurrentFolder);
+    send_command(0x17,FEEDBACK,0,CurrentFolder);           //  Попередня папка
+    #ifdef GENERAL_DEBUG
+     LOG.print (F("\nCurrent folder "));
+     LOG.println (CurrentFolder);
+    #endif
+    HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
 }
 
-void handle_track_up ()   {
-    send_command(0x01,0,0,0);  // Наступний трек
-    HTTP.send(200, "text/plain", "OK");
+void handle_folder_up ()   {
+    CurrentFolder = constrain(CurrentFolder+1, 1, 99);
+    jsonWrite(configSetup, "fold_sel", CurrentFolder);
+    send_command(0x17,FEEDBACK,0,CurrentFolder);          // Наступна папка
+    #ifdef GENERAL_DEBUG
+     LOG.print (F("\nCurrent folder "));
+     LOG.println (CurrentFolder);
+    #endif
+    HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
+}
+
+void handle_folder_select()   {
+    CurrentFolder = HTTP.arg("fold_sel").toInt();          // Вибрана папка
+    jsonWrite(configSetup, "fold_sel", CurrentFolder);
+    send_command(0x17,FEEDBACK,0,CurrentFolder);  
+    #ifdef GENERAL_DEBUG
+     LOG.print (F("\nCurrent folder "));
+     LOG.println (CurrentFolder);
+    #endif
+    HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
 }
 
 void handle_equalizer ()   {
     Equalizer = HTTP.arg("eq").toInt();
     jsonWrite(configSetup, "eq", Equalizer);
-    send_command(0x07,0,0,Equalizer);  // Еквалайзер
-    HTTP.send(200, "text/plain", "OK");
+    send_command(0x07,FEEDBACK,0,Equalizer);  // Еквалайзер
+    HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
 }
 
 #endif //MP3_TX_PIN

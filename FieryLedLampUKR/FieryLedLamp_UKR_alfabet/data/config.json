@@ -44,5 +44,8 @@
 "on_night_adv":0,
 "night_vol":1,
 "on_alm_snd":1,
-"alm_vol":5
+"alm_vol":5,
+"tmr":0,
+"eq":0,
+"fold_sel":27
 }
