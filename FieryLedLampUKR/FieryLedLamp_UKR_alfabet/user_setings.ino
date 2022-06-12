@@ -60,6 +60,9 @@ void User_setings ()  {
  HTTP.on("/day_vol", handle_day_advert_volume);  // Громкость озвучивания времени днём
  HTTP.on("/night_vol", handle_night_advert_volume);  // Громкость озвучивания времени ночью
  HTTP.on("/sound_set", handle_sound_set);  // Выбор папок для озвучивания эффектов
+ HTTP.on("/track_down", handle_track_down);  // Попередній трек у папці
+ HTTP.on("/track_up", handle_track_up);  // Наступний трек у папці
+ HTTP.on("/eq", handle_equalizer);  // Еквалайзер
  #endif
 
   // --------------------Получаем SSID со страницы
@@ -323,7 +326,7 @@ void handle_sc ()  {
 	modes[currentMode].Scale = jsonReadtoInt(configSetup, "sc");
 	loadingFlag = true;  // Перезапуск Эффекта
     #ifdef GENERAL_DEBUG
-    LOG.printf_P(PSTR("Новое значение Мфыштаба / Цвета: %d\n"), modes[currentMode].Scale);
+    LOG.printf_P(PSTR("Новое значение Масштаба / Цвета: %d\n"), modes[currentMode].Scale);
     #endif
 	HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
     #ifdef USE_MULTIPLE_LAMPS_CONTROL
@@ -487,82 +490,82 @@ void handle_time_zone() {
 void handle_alarm ()  { 
     char i[2];
     String configAlarm = readFile("alarm_config.json", 512); 
-	  #ifdef GENERAL_DEBUG
-		  LOG.println (F("\nУстановки будильника"));
-    	LOG.println(configAlarm);
-	  #endif
-  	  // подготовка  строк с именами полей json file
+	#ifdef GENERAL_DEBUG
+	LOG.println (F("\nУстановки будильника"));
+   	LOG.println(configAlarm);
+	#endif
+  	// подготовка  строк с именами полей json file
   	for (uint8_t k=0; k<7; k++) {
-   	      itoa ((k+1), i, 10);
-    	   //i[1] = 0;
-      	  String a = "a" + String (i) ;
-      	  String h = "h" + String (i) ;
-     	    String m = "m" + String (i) ;
-      	   //сохранение параметров в строку
-          if (!first_entry){  
+   	    itoa ((k+1), i, 10);
+    	//i[1] = 0;
+      	String a = "a" + String (i) ;
+      	String h = "h" + String (i) ;
+     	String m = "m" + String (i) ;
+      	//сохранение параметров в строку
+        if (!first_entry){  
      	    jsonWrite(configAlarm, a, HTTP.arg(a).toInt());
      	    jsonWrite(configAlarm, h, HTTP.arg(h).toInt());
      	    jsonWrite(configAlarm, m, HTTP.arg(m).toInt());
-          }
-     	  //сохранение установок будильника
-     	  alarms[k].State = (jsonReadtoInt(configAlarm, a));
-     	  alarms[k].Time = (jsonReadtoInt(configAlarm, h)) * 60 + (jsonReadtoInt(configAlarm, m));
-     	  EepromManager::SaveAlarmsSettings(&k, alarms);
-     }
-     if (!first_entry) {
+        }
+     	//сохранение установок будильника
+     	alarms[k].State = (jsonReadtoInt(configAlarm, a));
+     	alarms[k].Time = (jsonReadtoInt(configAlarm, h)) * 60 + (jsonReadtoInt(configAlarm, m));
+     	EepromManager::SaveAlarmsSettings(&k, alarms);
+        ESP.wdtFeed();
+        yield();
+    }
+    if (!first_entry) {
 	   jsonWrite(configAlarm, "t", HTTP.arg("t").toInt());
 	   jsonWrite(configAlarm, "after", HTTP.arg("after").toInt());
        jsonWrite(configAlarm, "a_br", HTTP.arg("a_br").toInt());
-     } 
-	  dawnMode = jsonReadtoInt(configAlarm, "t")-1;
-	  DAWN_TIMEOUT = jsonReadtoInt(configAlarm, "after");
-      DAWN_BRIGHT = jsonReadtoInt(configAlarm, "a_br");
-	  EepromManager::SaveDawnMode(&dawnMode);
+    } 
+	dawnMode = jsonReadtoInt(configAlarm, "t")-1;
+	DAWN_TIMEOUT = jsonReadtoInt(configAlarm, "after");
+    DAWN_BRIGHT = jsonReadtoInt(configAlarm, "a_br");
+	EepromManager::SaveDawnMode(&dawnMode);
     if (!first_entry)
         {
          writeFile("alarm_config.json", configAlarm );
-         HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
         }
+    HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
 }
 
 void save_alarms()   {
-      char k[2];
-	    bool alarm_change = false;
-    	String configAlarm = readFile("alarm_config.json", 512); 
+    char k[2];
+	bool alarm_change = false;
+    String configAlarm = readFile("alarm_config.json", 512); 
 	#ifdef GENERAL_DEBUG
-     LOG.println ("\nТекущие установки будильника");
+     LOG.println (F("\nТекущие установки будильника"));
      LOG.println(configAlarm);
 	#endif
-  for (byte i = 0; i < 7; i++)
-  {
-	itoa ((i+1), k, 10);
-    k[1] = 0;
-    String a = "a" + String (k) ;
-    String h = "h" + String (k) ;
-    String m = "m" + String (k) ;
-	if (alarms[i].State != (jsonReadtoInt(configAlarm, a)) || alarms[i].Time != (jsonReadtoInt(configAlarm, h)) * 60U + (jsonReadtoInt(configAlarm, m)))
-	{
-		alarm_change = true;
-		jsonWrite(configAlarm, a, alarms[i].State);
-		jsonWrite(configAlarm, h, (alarms[i].Time / 60U));
-		jsonWrite(configAlarm, m, (alarms[i].Time % 60U));
+    ESP.wdtFeed();
+    for (byte i = 0; i < 7; i++) {
+	    itoa ((i+1), k, 10);
+        k[1] = 0;
+        String a = "a" + String (k) ;
+        String h = "h" + String (k) ;
+        String m = "m" + String (k) ;
+	    if (alarms[i].State != (jsonReadtoInt(configAlarm, a)) || alarms[i].Time != (jsonReadtoInt(configAlarm, h)) * 60U + (jsonReadtoInt(configAlarm, m)))
+	      {
+		    alarm_change = true;
+		    jsonWrite(configAlarm, a, alarms[i].State);
+		    jsonWrite(configAlarm, h, (alarms[i].Time / 60U));
+		    jsonWrite(configAlarm, m, (alarms[i].Time % 60U));
+	      }
+        yield();
+    }
+    if (dawnMode != (jsonReadtoInt(configAlarm, "t")-1)) {
+	    alarm_change = true;
+	    jsonWrite(configAlarm, "t", (dawnMode + 1));
 	}
-  }
-
-  if (dawnMode != (jsonReadtoInt(configAlarm, "t")-1))
-	{
-	  alarm_change = true;
-	  jsonWrite(configAlarm, "t", (dawnMode + 1));
-	}
-  jsonWrite(configAlarm, "after", DAWN_TIMEOUT);
-  jsonWrite(configAlarm, "a_br", DAWN_BRIGHT);  
-  if (alarm_change)
-	{
-	  writeFile("alarm_config.json", configAlarm );
-	#ifdef GENERAL_DEBUG
-     LOG.println ("\nНовые установки будильника сохранены в файл");
-     LOG.println(configAlarm);
-	#endif
+    jsonWrite(configAlarm, "after", DAWN_TIMEOUT);
+    jsonWrite(configAlarm, "a_br", DAWN_BRIGHT);  
+    if (alarm_change) {
+	    writeFile("alarm_config.json", configAlarm );
+	    #ifdef GENERAL_DEBUG
+        LOG.println (F("\nНовые установки будильника сохранены в файл"));
+        LOG.println(configAlarm);
+	    #endif
 	}
 }
 
@@ -614,28 +617,33 @@ void handle_cycle_allwase ()  {  // Запускать режим цыкл по�
 }
 
 void handle_eff_all ()   {  //Выбрать все эффекты
-      char i[4];
-      String configCycle = readFile("cycle_config.json", 1024); 
-      // подготовка  строк с именами полей json 
-      for (uint8_t k=0; k<MODE_AMOUNT; k++) {
-       itoa ((k), i, 10);
-          String e = "e" + String (i) ;
-           //сохранение параметров в строку
+    char i[4];
+    String configCycle = readFile("cycle_config.json", 1024); 
+    // подготовка  строк с именами полей json 
+    ESP.wdtFeed();
+    for (uint8_t k=0; k<MODE_AMOUNT; k++) {
+        itoa ((k), i, 10);
+        String e = "e" + String (i) ;
+        //сохранение параметров в строку
         jsonWrite(configCycle, e, 1U);
-      }
+        yield();
+    }
     writeFile("cycle_config.json", configCycle );
     HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
 }
 
-void handle_eff_clr ()   {  //очостить все эффекты
+void handle_eff_clr ()   {  //очистить все эффекты
       char i[4];
       String configCycle = readFile("cycle_config.json", 1024); 
       // подготовка  строк с именами полей json 
-      for (uint8_t k=0; k<MODE_AMOUNT; k++) {
-       itoa ((k), i, 10);
-          String e = "e" + String (i) ;
-           //сохранение параметров в строку
+      ESP.wdtFeed();
+      for (uint8_t k=0; k<MODE_AMOUNT; k++)
+      {
+        itoa ((k), i, 10);
+        String e = "e" + String (i) ;
+        //сохранение параметров в строку
         jsonWrite(configCycle, e, 0U);
+        yield();
       }
     writeFile("cycle_config.json", configCycle );
     HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
@@ -649,6 +657,7 @@ void handle_cycle_set ()  {  // Выбор эффектов для Цикла
       LOG.println(configCycle);
       #endif
       // подготовка  строк с именами полей json file
+      ESP.wdtFeed();
       for (uint8_t k=0; k<MODE_AMOUNT; k++) {
        itoa ((k), i, 10);
           String e = "e" + String (i) ;
@@ -657,6 +666,7 @@ void handle_cycle_set ()  {  // Выбор эффектов для Цикла
         jsonWrite(configCycle, e, HTTP.arg(e).toInt());
         //сохранение выбранных эффектов для Цикла
         FavoritesManager::FavoriteModes[k] = jsonReadtoInt(configCycle, e);
+        yield();
         }
      #ifdef GENERAL_DEBUG
       LOG.println (F("\nВыбор эффектов для Цикла после обработки"));
@@ -668,8 +678,8 @@ void handle_cycle_set ()  {  // Выбор эффектов для Цикла
          writeFile("cycle_config.json", configCycle );
          //settChanged = true;
          //eepromTimeout = millis();
-         HTTP.send(200, "text/plain", "OK");
         }
+         HTTP.send(200, "text/plain", "OK");
 }
 
 void cycle_get ()  { // запись выбранных эффектов в файл питания
@@ -681,6 +691,7 @@ void cycle_get ()  { // запись выбранных эффектов в фа
       LOG.println(configCycle);
       #endif
       // подготовка  строк с именами полей json file
+      ESP.wdtFeed();
       for (uint8_t k=0; k<MODE_AMOUNT; k++) {
          itoa ((k), i, 10);
          String e = "e" + String (i) ;
@@ -690,7 +701,7 @@ void cycle_get ()  { // запись выбранных эффектов в фа
 			jsonWrite(configCycle, e, FavoritesManager::FavoriteModes[k]);
 			cycle_change = true;
 		  }
-        
+          yield();
 		}
 	if (cycle_change)	{
 	    writeFile("cycle_config.json", configCycle );
@@ -735,6 +746,7 @@ void handle_rnd ()   { // Установка случайных настроек
 void handle_all_br ()   {  //Общая яркость
     jsonWrite(configSetup, "all_br", HTTP.arg("all_br").toInt());
     uint8_t ALLbri = jsonReadtoInt(configSetup, "all_br");
+    ESP.wdtFeed();
     for (uint8_t i = 0; i < MODE_AMOUNT; i++) {
         modes[i].Brightness = ALLbri;    
       }
@@ -861,11 +873,14 @@ void handle_eff_save ()   {
            file.write (modes[i].Brightness);
            file.write (modes[i].Speed);
            file.write (modes[i].Scale);
+           yield();
         }
         #ifdef GENERAL_DEBUG
         LOG.println (F("Настройки эффектов сохранены в файл"));
         #endif //GENERAL_DEBUG
         showWarning(CRGB::Blue, 2000U, 500U);                    // мигание синим цветом 2 секунды
+        ESP.wdtFeed();
+        yield();
     }
     else   {
         #ifdef GENERAL_DEBUG
@@ -882,10 +897,12 @@ void handle_eff_read ()   {
     if (file)   {
         uint16_t file_size = file.size();
         if ((file_size/3) < MODE_AMOUNT) file_size -= 6;
+        ESP.wdtFeed();
         for (uint8_t i = 0; i < (file_size/3); i++) {
            modes[i].Brightness = file.read ();
            modes[i].Speed = file.read ();
            modes[i].Scale = file.read ();
+           yield();
         }
         #ifdef GENERAL_DEBUG
         LOG.println (F("Настройки эффектов прочитаны из файла и применены"));
@@ -945,8 +962,8 @@ void handle_index2 ()   {
 
 
 void get_time_manual ()   {
-     time_t tmp;
-     tmp = HTTP.arg("get_time").toInt();
+    time_t tmp;
+    tmp = HTTP.arg("get_time").toInt();
     jsonWrite(configSetup, "get_time", tmp);
     phoneTimeLastSync = tmp + jsonReadtoInt(configSetup, "timezone") * 3600;
     manualTimeShift = phoneTimeLastSync - millis() / 1000UL;
@@ -1038,53 +1055,75 @@ void handle_night_advert_volume ()   {
 }
 
 void handle_sound_set ()   {    // Выбор папок для озвучивания эффектов
-      char i[4];
-      String configSound = readFile("sound_config.json", 1280); 
-      #ifdef GENERAL_DEBUG
-      LOG.println (F("\nВыбор папок для озвучивания эффектов"));
-      LOG.println(configSound);
-      #endif
-      // подготовка  строк с именами полей json file
-      for (uint8_t k=0; k<MODE_AMOUNT; k++) {
-       itoa ((k), i, 10);
-          String e = "e" + String (i) ;
-           //сохранение параметров в строку
+    char i[4];
+    String configSound = readFile("sound_config.json", 1280); 
+    #ifdef GENERAL_DEBUG
+    LOG.println (F("\nВыбор папок для озвучивания эффектов"));
+    LOG.println(configSound);
+    #endif
+    // подготовка  строк с именами полей json file
+    ESP.wdtFeed();
+    for (uint8_t k=0; k<MODE_AMOUNT; k++) {
+        itoa ((k), i, 10);
+        String e = "e" + String (i) ;
+        //сохранение параметров в строку
         if (!first_entry)  
-        jsonWrite(configSound, e, HTTP.arg(e).toInt());
+           jsonWrite(configSound, e, HTTP.arg(e).toInt());
         //сохранение выбранных папок для озвучивания эффектов
         effects_folders[k] = jsonReadtoInt(configSound, e);
-        }
-     #ifdef GENERAL_DEBUG
-      LOG.println (F("\nВыбор папок для озвучивания эффектов после обработки"));
-      LOG.println(configSound);
-      LOG.print ("Массив effects_folders [ ");
-      for (uint8_t k=0; k<MODE_AMOUNT; k++){
-          LOG.print (effects_folders[k]);
-          LOG.print (", ");
-      }
-      LOG.println ("]");
-     #endif     
-      if (!first_entry)
-      {
+        yield();
+    }
+    #ifdef GENERAL_DEBUG
+    LOG.println (F("\nВыбор папок для озвучивания эффектов после обработки"));
+    LOG.println(configSound);
+    LOG.print (F("Массив effects_folders [ "));
+    ESP.wdtFeed();
+    for (uint8_t k=0; k<MODE_AMOUNT; k++){
+        LOG.print (effects_folders[k]);
+        LOG.print (F(", "));
+        yield();
+    }
+    LOG.println (F("]"));
+    #endif     
+    if (!first_entry) {
         writeFile("sound_config.json", configSound );
-        HTTP.send(200, "text/plain", "OK");
-      }
+    }
+    HTTP.send(200, "text/plain", "OK");
+}
+
+void handle_track_down ()   {
+    send_command(0x02,0,0,0);  // Попередній трек
+    HTTP.send(200, "text/plain", "OK");    
+}
+
+void handle_track_up ()   {
+    send_command(0x01,0,0,0);  // Наступний трек
+    HTTP.send(200, "text/plain", "OK");
+}
+
+void handle_equalizer ()   {
+    Equalizer = HTTP.arg("eq").toInt();
+    jsonWrite(configSetup, "eq", Equalizer);
+    send_command(0x07,0,0,Equalizer);  // Еквалайзер
+    HTTP.send(200, "text/plain", "OK");
 }
 
 #endif //MP3_TX_PIN
   
 bool FileCopy (String SourceFile , String TargetFile)   {
-  File S_File = SPIFFS.open( SourceFile, "r");
-  File T_File = SPIFFS.open( TargetFile, "w");
-  if (!S_File || !T_File) 
+    File S_File = SPIFFS.open( SourceFile, "r");
+    File T_File = SPIFFS.open( TargetFile, "w");
+    if (!S_File || !T_File) 
 	return false;
-  size_t size = S_File.size();
-  for (unsigned int i=0; i<size; i++)  {
-   T_File.write(S_File.read ());
-   }
-  S_File.close();
-  T_File.close();
-  return true;
+    size_t size = S_File.size();
+    for (unsigned int i=0; i<size; i++)  {
+        T_File.write(S_File.read ());
+        ESP.wdtFeed();
+        yield();
+    }
+    S_File.close();
+    T_File.close();
+    return true;
 }
 
 void EffectList (String efflist )   {

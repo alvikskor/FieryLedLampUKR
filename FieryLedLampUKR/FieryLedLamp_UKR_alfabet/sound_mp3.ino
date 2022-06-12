@@ -1,6 +1,6 @@
 #ifdef MP3_TX_PIN
 
-#define MP3_READ_TIMEOUT  (500UL)
+#define MP3_READ_TIMEOUT  (1500UL)
 /*
 // При наступлении ночи NIGHT_HOURS_START MP3 переходит на ночной режим
 // Воиспроиведение времени используем метод "ADVERT" или объявление
@@ -14,35 +14,35 @@
 void mp3_setup()   {
   //send_command(0x0C,1,0,0);  //Сброс модуля
   int16_t tmp;
-if ( first_entry == 5 ){
-    first_entry = 0;
-    //mp3.begin(9600);
-    //myDFPlayer.begin(mp3,false,false);
-    delay(mp3_delay);
-    send_command(0x0C,1,0,0);  //Сброс модуля
-    LOG.println(F("\n mp3 connecting "));
-    mp3_player_connect = 2;
-    return;
-}
-
-#ifdef CHECK_MP3_CONNECTION
+  if ( first_entry == 5 ){
+      first_entry = 0;
+      delay(mp3_delay);
+      send_command(0x0C,1,0,0);  //Сброс модуля
+      LOG.println(F("\n mp3 Reset "));
+      mp3_player_connect = 2;
+      return;
+  }
+  //if ( read_command (MP3_READ_TIMEOUT) == 2) LOG.println ("SD картка встановлена");
+  //else LOG.println ("SD картка не встановлена або МР3 плеер не підключено");
+  read_command (MP3_READ_TIMEOUT);
+  #ifdef CHECK_MP3_CONNECTION
     if ((tmp = send_command(0x48,1,0,0)) != -1) {              // Проверяем, есть ли файлы на карте и, если есть, то
-#else
+  #else
     tmp = send_command(0x48,1,0,0);
     if (true) {                                               // Не проверяем, есть ли связь с МР3 плеером
-#endif  //CHECK_MP3_CONNECTION
+  #endif  //CHECK_MP3_CONNECTION
         delay(mp3_delay);
-        send_command(0x07,1,0,0);                // Устанавливаем эквалайзер в положение NORMAL
+        send_command(0x07,1,0,Equalizer);                // Устанавливаем эквалайзер в положение Equalizer
         delay(mp3_delay);
         send_command(0x09,1,0,1);                // Устанавливаем источником SD-карту
         delay(mp3_delay);
         send_command(6,1,0,eff_volume);               // Устанавливаем громкость равной eff_volume (от 0 до 30)
         //send_command(0x48,0,0,0);
         mp3_player_connect = 4;
-        LOG.print (F("mp3 player подключен. Файлов на SD карте "));
+        LOG.print (F("mp3 плеєр підключено. SD картка встановлена. Файлів на SD картці "));
         LOG.println (tmp);
     }
-  else { LOG.println (F("mp3 player не подключен")); mp3_player_connect = 0; }
+    else { LOG.println (F("SD картка не встановлена або МР3 плеєр не підключено")); mp3_player_connect = 0; }
 }
 
 void play_time_ADVERT()   {
@@ -104,8 +104,15 @@ void play_sound(uint8_t folder)   {
     }
     else {
         delay(mp3_delay);
+        if ( folder >= 20 && folder <= 90 )
+        {
+            folder = (uint8_t) random (folder, constrain (folder + 10, 20, 99));
+        }
         send_command(0x17,1,0,folder); // Включить непрерывное воспроизведение указанной папки
-        //mp3_play_now = true;      // Указывает, играет ли сейчас мелодия
+        #ifdef GENERAL_DEBUG
+        LOG.print (F("\nCurrent folder "));
+        LOG.println (folder);
+        #endif
         mp3_stop = false;
     }
 }
@@ -170,9 +177,10 @@ void mp3_loop()   {
   
   if ((set_mp3_play_now) && (mp3_folder_last != mp3_folder)) {
         #ifdef MP3_DEBUG
+          LOG.print (F("mp3_folder_last = "));
+          LOG.println (mp3_folder_last);
           LOG.print (F("mp3_folder = "));
           LOG.println (mp3_folder);
-          LOG.println (mp3_folder_last);
         #endif   
     mp3_folder_last = mp3_folder;
     play_sound(mp3_folder);
@@ -249,7 +257,7 @@ int8_t read_command (uint32_t mp3_read_timeout) {
       LOG.println();
     #endif  //MP3_DEBUG
     
-    if ( mp3_receive_buf[2] == 6 && mp3_receive_buf[9] == 0xEF && mp3_receive_buf[3] != 0x40) return mp3_receive_buf[3];
+    if ( mp3_receive_buf[2] == 6 && mp3_receive_buf[9] == 0xEF && mp3_receive_buf[3] != 0x40) return mp3_receive_buf[6];
     else return -1;
 }
 #endif

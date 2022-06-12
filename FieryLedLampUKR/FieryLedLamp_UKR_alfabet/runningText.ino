@@ -110,8 +110,10 @@ void printTime(uint32_t thisTime, bool onDemand, bool ONflag) // периоди�
     #endif
     
     #ifdef MP3_TX_PIN
-    first_entry = 1;
-    advert_hour = true;
+    if (mp3_player_connect == 4){
+        first_entry = 1;
+        advert_hour = true;
+    }
     #endif  //MP3_TX_PIN
 
     while (!fillString(stringTime, letterColor, false)) {
@@ -137,6 +139,7 @@ void printTime(uint32_t thisTime, bool onDemand, bool ONflag) // периоди�
         play_time_ADVERT();
         ESP.wdtFeed();
     }
+    //first_entry = 0;
     #endif  //MP3_TX_PIN
 
     #if defined(MOSFET_PIN) && defined(MOSFET_LEVEL)        // установка сигнала в пин, управляющий MOSFET транзистором, соответственно состоянию вкл/выкл матрицы или будильника

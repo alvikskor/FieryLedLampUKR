@@ -202,6 +202,7 @@ uint8_t ml1, ml2, ml3;
 uint8_t mp3_folder=1;                // Текущая папка для воспроизведения.
 uint8_t alarm_sound_on =false;       // Включить/выключить звук будильника
 uint8_t alarm_volume;                // Громкость будильника
+uint8_t Equalizer;                   // Еквалайзер
 bool alarm_sound_flag =false;        // проигрывается ли сейчас будильник
 uint8_t dawnflag_sound = false;      // Звук не начал обслуживание рассвета. Если не true - звук обслуживает рассвет
 //uint8_t tmp_fold;
@@ -332,6 +333,7 @@ void setup()  //================================================================
   night_advert_sound_on = jsonReadtoInt(configSetup,"on_night_adv");
   day_advert_volume = jsonReadtoInt(configSetup,"day_vol");
   night_advert_volume = jsonReadtoInt(configSetup,"night_vol");
+  Equalizer = jsonReadtoInt(configSetup, "eq");
   #endif //MP3_TX_PIN
 
 
@@ -491,10 +493,10 @@ void setup()  //================================================================
     LOG.print(F("IP адрес: "));
     LOG.println(WiFi.softAPIP());
    #ifdef GENERAL_DEBUG
-    LOG.println ("*******************************************");
-    LOG.print ("Heap Size after connection AP mode = ");
+    LOG.println (F("*******************************************"));
+    LOG.print (F("Heap Size after connection AP mode = "));
     LOG.println(system_get_free_heap_size());
-    LOG.println ("*******************************************");
+    LOG.println (F("*******************************************"));
     #endif    
 	connect = true;
     delay (100);    
@@ -557,7 +559,7 @@ void setup()  //================================================================
   
   #ifdef MP3_TX_PIN
    mp3.begin(9600);
-   LOG.println ("Старт mp3 player");
+   LOG.println (F("Старт mp3 player"));
    //mp3_setup();
    mp3_timer = millis();
    mp3_player_connect = 1;
@@ -582,7 +584,7 @@ void loop()  //=================================================================
 	if ((millis()-my_timer) >= 1000UL) {	
 	  my_timer=millis();
 	  if (ESP_CONN_TIMEOUT--) {
-		LOG.print(".");
+		LOG.print(F("."));
 		ESP.wdtFeed();
 	  }
 	  else {
@@ -609,10 +611,10 @@ void loop()  //=================================================================
 		//ESP_CONN_TIMEOUT = 0;
 		lastResolveTryMoment = 0;
       #ifdef GENERAL_DEBUG
-        LOG.println ("***********************************************");
-        LOG.print ("Heap Size after connection Station mode = ");
+        LOG.println (F("***********************************************"));
+        LOG.print (F("Heap Size after connection Station mode = "));
         LOG.println(system_get_free_heap_size());
-        LOG.println ("***********************************************");
+        LOG.println (F("***********************************************"));
       #endif
       #ifdef DISPLAY_IP_AT_START
         loadingFlag = true;
@@ -664,7 +666,7 @@ do {	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=========
                  mp3_setup ();
                 }
               break;
-      case 2: if ((millis() - mp3_timer > 5000UL) || (read_command(10) == 0x3F)) mp3_player_connect = 3;
+      case 2: if ( millis() - mp3_timer > 5000UL ) mp3_player_connect = 3;//if ((millis() - mp3_timer > 5000UL) || (read_command(10) == 0x3F)) mp3_player_connect = 3;
               break;
       case 3: mp3_setup(); break;
       case 4: mp3_loop(); break;
@@ -676,13 +678,13 @@ do {	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=========
 
   effectsTick();
   
-  #ifdef GENERAL_DEBUG
+  #ifdef HEAP_SIZE_PRINT
    if (millis() - mem_timer > 10000UL) {
        mem_timer = millis();
-       LOG.print ("Heap Size = ");
+       LOG.print (F("Heap Size = "));
        LOG.println(system_get_free_heap_size());
    }
-  #endif //GENERAL_DEBUG 
+  #endif //HEAP_SIZE_PRINT
 
   EepromManager::HandleEepromTick(&settChanged, &eepromTimeout, &ONflag, 
     &currentMode, modes, &(FavoritesManager::SaveFavoritesToEeprom));
