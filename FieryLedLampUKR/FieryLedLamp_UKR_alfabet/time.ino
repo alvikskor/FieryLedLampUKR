@@ -31,7 +31,6 @@ static CRGB dawnColor[6];
 static uint8_t dawnCounter = 0;                                           // счётчик первых 10 шагов будильника
 #ifdef TM1637_USE
 uint8_t hours;
-uint8_t minu;
 #endif
 
 void timeTick()
@@ -127,7 +126,7 @@ if (stillUseNTP)
       if (!timeSynched)                                                   // если время не было синхронизиировано ни разу, отключаем будильник до тех пор, пока оно не будет синхронизировано
       {
 #ifdef TM1637_USE
-        display.displayByte(_dash, _dash, _dash, _dash);                  // отображаем прочерки
+        if (!DisplayFlag) display.displayByte(_dash, _dash, _dash, _dash);                  // отображаем прочерки
 #endif
         return;
       }
@@ -144,9 +143,9 @@ if (stillUseNTP)
       printTime(thisTime, false, ONflag);                                 // проверка текущего времени и его вывод (если заказан и если текущее время соответстует заказанному расписанию вывода)
 
 #ifdef TM1637_USE
-      if (minu != minute(currentLocalTime)) {
+      if (!DisplayFlag && last_minute != minute(currentLocalTime)) {
         hours = hour(currentLocalTime);                   // получаем значение часов
-        minu = minute(currentLocalTime);                  // получаем значение минут
+        last_minute = minute(currentLocalTime);                  // получаем значение минут
         clockTicker_blink();
         
     #ifdef MP3_TX_PIN
@@ -405,7 +404,7 @@ void clockTicker_blink()
       tmr_blink = millis();
       //tm1637_brightness ();
       display.setBrightness((DispBrightness/51U)>4 ? 7 : DispBrightness/51U , DispBrightness);
-      display.displayClock(hours, minu);                         // выводим время функцией часов
+      display.displayClock(hours, last_minute);                         // выводим время функцией часов
       if (DispBrightness >= 204) {
         aDirection = false;
         //DispBrightness = 7;
@@ -420,7 +419,7 @@ void clockTicker_blink()
   else {
         tm1637_brightness ();
         display.setBrightness((DispBrightness/51U)>4 ? 7 : DispBrightness/51U , DispBrightness);
-        display.displayClock(hours, minu);
+        display.displayClock(hours, last_minute);
       } 
   }    
 }

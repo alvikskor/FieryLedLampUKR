@@ -62,6 +62,11 @@
 #ifdef MP3_TX_PIN
 #include <SoftwareSerial.h>                  // Подключаем библиотеку для работы с последовательным интерфейсом
 //#include <DFRobotDFPlayerMini.h>             // Подключаем библиотеку для работы с плеером
+ #ifdef MP3_DEBUG
+  #define FEEDBACK  1
+ #else
+  #define FEEDBACK  0
+ #endif  //MP3_DEBUG
 #endif  //MP3_TX_PIN
 
 // --- ИНИЦИАЛИЗАЦИЯ ОБЪЕКТОВ ----------
@@ -202,6 +207,7 @@ uint8_t ml1, ml2, ml3;
 uint8_t mp3_folder=1;                // Текущая папка для воспроизведения.
 uint8_t alarm_sound_on =false;       // Включить/выключить звук будильника
 uint8_t alarm_volume;                // Громкость будильника
+uint8_t Equalizer;                   // Еквалайзер
 bool alarm_sound_flag =false;        // проигрывается ли сейчас будильник
 uint8_t dawnflag_sound = false;      // Звук не начал обслуживание рассвета. Если не true - звук обслуживает рассвет
 //uint8_t tmp_fold;
@@ -224,9 +230,8 @@ bool mp3_stop = true;                       // Озвучка эффектов �
 bool pause_on = true;                        // Озвучка эффектов на паузе. false - не на паузе
 uint8_t eff_volume = 9;                      // громкость воспроизведения
 uint8_t eff_sound_on = 0;                    // звук включен - !0 (true), выключен - 0
+uint8_t CurrentFolder;              // Папка, на которую переключились (будет проигрываться)
 SoftwareSerial mp3(MP3_RX_PIN, MP3_TX_PIN);  // создаём объект mySoftwareSerial и указываем выводы, к которым подлючен плеер (RX, TX)
-//DFRobotDFPlayerMini myDFPlayer;
-//uint32_t timerss = 0;
 #ifndef TM1637_USE
  uint8_t minute_tmp;
 #endif
@@ -242,10 +247,18 @@ uint32_t tmr_blink = 0;              // +++ таймер плавного изм
 //bool blink_clock = false;            // +++ флаг: false-запрещает плавное изменение яркости дисплея, true-разрешает плавное изменение яркости дисплея
 TM1637Display display(CLK, DIO);     // +++ подключаем дисплей
 bool aDirection = false;             // +++ Направление изменения яркрсти
+uint8_t last_minute;
+uint32_t DisplayTimer;               // Время отображения номера эффекта
+uint8_t LastEffect = 255;            // последний Проигрываемый эффект
+uint8_t DisplayFlag=0;               // Флаг, показывающий, что отображается номер эффекта и папки
+ #ifdef MP3_TX_PIN
+ uint8_t LastCurrentFolder = 255;    // Проигрываемая папка
+ #endif  //MP3_TX_PIN
 #endif  //TM1637_USE
-#ifdef GENERAL_DEBUG
+
+#ifdef HEAP_SIZE_PRINT
 uint32_t mem_timer;
-#endif //GENERAL_DEBUG 
+#endif //HEAP_SIZE_PRINT 
 
 
 void setup()  //==================================================================  void setup()  =========================================================================
@@ -332,6 +345,7 @@ void setup()  //================================================================
   night_advert_sound_on = jsonReadtoInt(configSetup,"on_night_adv");
   day_advert_volume = jsonReadtoInt(configSetup,"day_vol");
   night_advert_volume = jsonReadtoInt(configSetup,"night_vol");
+  Equalizer = jsonReadtoInt(configSetup, "eq");
   #endif //MP3_TX_PIN
 
 
@@ -491,10 +505,10 @@ void setup()  //================================================================
     LOG.print(F("IP адрес: "));
     LOG.println(WiFi.softAPIP());
    #ifdef GENERAL_DEBUG
-    LOG.println ("*******************************************");
-    LOG.print ("Heap Size after connection AP mode = ");
+    LOG.println (F("*******************************************"));
+    LOG.print (F("Heap Size after connection AP mode = "));
     LOG.println(system_get_free_heap_size());
-    LOG.println ("*******************************************");
+    LOG.println (F("*******************************************"));
     #endif    
 	connect = true;
     delay (100);    
@@ -557,7 +571,7 @@ void setup()  //================================================================
   
   #ifdef MP3_TX_PIN
    mp3.begin(9600);
-   LOG.println ("Старт mp3 player");
+   LOG.println (F("Старт mp3 player"));
    //mp3_setup();
    mp3_timer = millis();
    mp3_player_connect = 1;
@@ -566,11 +580,19 @@ void setup()  //================================================================
   //TextTicker = RUNNING_TEXT_DEFAULT;
   delay (100);
   
+#ifdef TM1637_USE
+  DisplayTimer = millis();
+ #ifdef MP3_TX_PIN
+    CurrentFolder = effects_folders[currentMode];
+    jsonWrite(configSetup, "fold_sel", CurrentFolder);
+ #endif  //MP3_TX_PIN
+#endif  //TM1637_USE
+  
   my_timer=millis();
   
-  #ifdef GENERAL_DEBUG
+  #ifdef HEAP_SIZE_PRINT
    mem_timer = millis();
-  #endif //GENERAL_DEBUG 
+  #endif //HEAP_SIZE_PRINT 
 }
 
 
@@ -582,7 +604,7 @@ void loop()  //=================================================================
 	if ((millis()-my_timer) >= 1000UL) {	
 	  my_timer=millis();
 	  if (ESP_CONN_TIMEOUT--) {
-		LOG.print(".");
+		LOG.print(F("."));
 		ESP.wdtFeed();
 	  }
 	  else {
@@ -609,10 +631,10 @@ void loop()  //=================================================================
 		//ESP_CONN_TIMEOUT = 0;
 		lastResolveTryMoment = 0;
       #ifdef GENERAL_DEBUG
-        LOG.println ("***********************************************");
-        LOG.print ("Heap Size after connection Station mode = ");
+        LOG.println (F("***********************************************"));
+        LOG.print (F("Heap Size after connection Station mode = "));
         LOG.println(system_get_free_heap_size());
-        LOG.println ("***********************************************");
+        LOG.println (F("***********************************************"));
       #endif
       #ifdef DISPLAY_IP_AT_START
         loadingFlag = true;
@@ -646,10 +668,11 @@ do {	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=========
   parseUDP();
   yield();
   #ifdef TM1637_USE
-    if (millis() - tmr_clock > 1000UL) {       // каждую секунду изменяем
+    if (millis() - tmr_clock > 500UL) {         // каждую секунду изменяем
       tmr_clock = millis();                  // обновляем значение счетчика
       dotFlag = !dotFlag;                    // инверсия флага
-      display.point(dotFlag);                // выкл/выкл двоеточия
+      if (!DisplayFlag) display.point(dotFlag); // выкл/выкл двоеточия
+      Display_Timer ();
     }
     if (dawnFlag) {
     clockTicker_blink();
@@ -658,13 +681,13 @@ do {	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=========
   #ifdef MP3_TX_PIN
   switch (mp3_player_connect){
       case 0: break;
-      case 1: if (millis() - mp3_timer > 5000UL || (read_command(10) == 0x3F)){  //if (millis() - mp3_timer > 5000) {
+      case 1: if (millis() - mp3_timer > 3000UL || (read_command(10) == 0x3F)){  //if (millis() - mp3_timer > 5000) {
                  first_entry = 5;
                  mp3_timer = millis();
                  mp3_setup ();
                 }
               break;
-      case 2: if ((millis() - mp3_timer > 5000UL) || (read_command(10) == 0x3F)) mp3_player_connect = 3;
+      case 2: if ( millis() - mp3_timer > 3500UL ) mp3_player_connect = 3;//if ((millis() - mp3_timer > 5000UL) || (read_command(10) == 0x3F)) mp3_player_connect = 3;
               break;
       case 3: mp3_setup(); break;
       case 4: mp3_loop(); break;
@@ -676,13 +699,13 @@ do {	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=========
 
   effectsTick();
   
-  #ifdef GENERAL_DEBUG
+  #ifdef HEAP_SIZE_PRINT
    if (millis() - mem_timer > 10000UL) {
        mem_timer = millis();
-       LOG.print ("Heap Size = ");
+       LOG.print (F("Heap Size = "));
        LOG.println(system_get_free_heap_size());
    }
-  #endif //GENERAL_DEBUG 
+  #endif //HEAP_SIZE_PRINT
 
   EepromManager::HandleEepromTick(&settChanged, &eepromTimeout, &ONflag, 
     &currentMode, modes, &(FavoritesManager::SaveFavoritesToEeprom));

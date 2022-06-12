@@ -1,5 +1,14 @@
 #ifdef MP3_TX_PIN
 
+#ifdef DF_PLAYER_IS_ORIGINAL
+  #define ADVERT_TIMER_1 500UL
+  #define ADVERT_TIMER_2 1900UL
+  #define ADVERT_TIMER_3 500UL
+#else
+  #define ADVERT_TIMER_1 700UL
+  #define ADVERT_TIMER_2 2200UL
+  #define ADVERT_TIMER_3 1200UL
+#endif
 #define MP3_READ_TIMEOUT  (500UL)
 /*
 // При наступлении ночи NIGHT_HOURS_START MP3 переходит на ночной режим
@@ -12,37 +21,34 @@
 */
 
 void mp3_setup()   {
-  //send_command(0x0C,1,0,0);  //Сброс модуля
   int16_t tmp;
-if ( first_entry == 5 ){
-    first_entry = 0;
-    //mp3.begin(9600);
-    //myDFPlayer.begin(mp3,false,false);
-    delay(mp3_delay);
-    send_command(0x0C,1,0,0);  //Сброс модуля
-    LOG.println(F("\n mp3 connecting "));
-    mp3_player_connect = 2;
-    return;
-}
-
-#ifdef CHECK_MP3_CONNECTION
+  if ( first_entry == 5 ){
+      first_entry = 0;
+      delay(mp3_delay);
+      send_command(0x0C,FEEDBACK,0,0);  //Сброс модуля
+      LOG.println(F("\n mp3 Reset "));
+      mp3_player_connect = 2;
+      return;
+  }
+  read_command (MP3_READ_TIMEOUT);
+  #ifdef CHECK_MP3_CONNECTION
     if ((tmp = send_command(0x48,1,0,0)) != -1) {              // Проверяем, есть ли файлы на карте и, если есть, то
-#else
-    tmp = send_command(0x48,1,0,0);
+  #else
+    tmp = send_command(0x48,FEEDBACK,0,0);
     if (true) {                                               // Не проверяем, есть ли связь с МР3 плеером
-#endif  //CHECK_MP3_CONNECTION
+  #endif  //CHECK_MP3_CONNECTION
         delay(mp3_delay);
-        send_command(0x07,1,0,0);                // Устанавливаем эквалайзер в положение NORMAL
+        send_command(0x07,FEEDBACK,0,Equalizer);                // Устанавливаем эквалайзер в положение Equalizer
         delay(mp3_delay);
-        send_command(0x09,1,0,1);                // Устанавливаем источником SD-карту
+        send_command(0x09,FEEDBACK,0,1);                // Устанавливаем источником SD-карту
         delay(mp3_delay);
-        send_command(6,1,0,eff_volume);               // Устанавливаем громкость равной eff_volume (от 0 до 30)
-        //send_command(0x48,0,0,0);
+        send_command(6,FEEDBACK,0,eff_volume);               // Устанавливаем громкость равной eff_volume (от 0 до 30)
         mp3_player_connect = 4;
-        LOG.print (F("mp3 player подключен. Файлов на SD карте "));
+        LOG.print (F("mp3 плеєр підключено. SD картка встановлена. Файлів на SD картці "));
         LOG.println (tmp);
+        //Serial.print (FEEDBACK);
     }
-  else { LOG.println (F("mp3 player не подключен")); mp3_player_connect = 0; }
+    else { LOG.println (F("SD картка не встановлена або МР3 плеєр не підключено")); mp3_player_connect = 0; }
 }
 
 void play_time_ADVERT()   {
@@ -51,44 +57,45 @@ void play_time_ADVERT()   {
        if (first_entry==1 && advert_hour) {
            advert_flag = true;
            first_entry = 3;
-           send_command(0x06,1,0,0);
+           send_command(0x06,FEEDBACK,0,0);
            delay(mp3_delay);
            if (pause_on || mp3_stop) {
-              send_command(0x0D,1,0,0);  //Старт
-              delay(500);
+              send_command(0x0D,FEEDBACK,0,0);  //Старт
+              delay(ADVERT_TIMER_1);
            }
            int pt_h=(uint8_t)((thisTime - thisTime % 60U) / 60U);
            if (pt_h==0) pt_h=24;
-           send_command(0x13,1,0,pt_h);  //Старт Адверт №...
+           send_command(0x13,FEEDBACK,0,pt_h);  //Старт Адверт №... Часы
+           //Serial.print ("Start ADVERT Hour");
            delay(mp3_delay);
-           if (day_night) send_command(0x06,0,0,day_advert_volume);  //Громкость
-           else send_command(0x06,0,0,night_advert_volume);  //Громкость
+           if (day_night) send_command(0x06,FEEDBACK,0,day_advert_volume);  //Громкость днём
+           else send_command(0x06,FEEDBACK,0,night_advert_volume);  //Громкость ночью
            mp3_timer = millis();
         }
-        if (advert_hour && (millis() - mp3_timer > 1700UL)) {
+        if (advert_hour && (millis() - mp3_timer > ADVERT_TIMER_2)) {
            advert_hour = false;
            int pt_m=(uint8_t)(thisTime % 60U);
+           send_command(0x13,FEEDBACK,0,pt_m+100);  //Старт Адверт №... Минуты
+           //Serial.print ("Start ADVERT Minute");
            mp3_timer = millis();
-           send_command(0x13,0,0,pt_m+100);  //Старт Адверт №...
         }
-        if (millis() - mp3_timer > 1900UL) {
-           send_command(0x06,0,0,0);  //Громкость
+        if (!advert_hour && millis() - mp3_timer > ADVERT_TIMER_2) {
+           send_command(0x06,FEEDBACK,0,0);  //Громкость
            mp3_timer = millis();
            first_entry =2;
         }
     }
     else {
-        if (millis() - mp3_timer > 500) {
+        if (millis() - mp3_timer > ADVERT_TIMER_3) {
            advert_flag = false;
            first_entry =0;
-           //send_command(0x15,1,0,0);  //Стоп Адверт
            delay(mp3_delay);    
             if ((pause_on || mp3_stop) && !alarm_sound_flag) {
-               send_command(0x0E,0,0,0);  //Пауза
+               send_command(0x0E,FEEDBACK,0,0);  //Пауза
                delay(mp3_delay);
             }
-        if (dawnflag_sound) send_command(0x06,0,0,alarm_volume);  //Громкость будильника
-        else send_command(0x06,0,0,eff_volume);  //Громкость эффектов
+        if (dawnflag_sound) send_command(0x06,FEEDBACK,0,alarm_volume);  //Громкость будильника
+        else send_command(0x06,FEEDBACK,0,eff_volume);  //Громкость эффектов
         delay(mp3_delay);
         }
     }
@@ -98,16 +105,25 @@ void play_time_ADVERT()   {
 void play_sound(uint8_t folder)   {
     if (!mp3_folder) {
         delay(mp3_delay);
-        send_command(0x0E,1,0,0);  //Пауза
+        send_command(0x0E,FEEDBACK,0,0);  //Пауза
         mp3_stop = true;
         //mp3_play_now =false;
     }
     else {
         delay(mp3_delay);
-        send_command(0x17,1,0,folder); // Включить непрерывное воспроизведение указанной папки
-        //mp3_play_now = true;      // Указывает, играет ли сейчас мелодия
+        if ( folder >= 20 && folder <= 90 )
+        {
+            folder = (uint8_t) random (folder, constrain (folder + 10, 20, 99));
+        }
+        send_command(0x17,FEEDBACK,0,folder); // Включить непрерывное воспроизведение указанной папки
         mp3_stop = false;
     }
+    CurrentFolder = folder;
+    jsonWrite(configSetup, "fold_sel", CurrentFolder);
+    #ifdef GENERAL_DEBUG
+     LOG.print (F("\nCurrent folder "));
+     LOG.println (CurrentFolder);
+    #endif
 }
 
 void mp3_loop()   {
@@ -115,19 +131,18 @@ void mp3_loop()   {
       if (dawnflag_sound ) {
           if (alarm_sound_flag && (millis() - alarm_timer > 1000)) {
               alarm_timer = millis();
-              send_command (0x06,0,0,constrain((uint8_t)(dawnPosition/8), 0, alarm_volume)); //Нарастание громкости в зависимости от стадии рассвета от 0 до alarm_volume
+              send_command (0x06,FEEDBACK,0,constrain((uint8_t)(dawnPosition/8), 0, alarm_volume)); //Нарастание громкости в зависимости от стадии рассвета от 0 до alarm_volume
           }
           return;
      }
-      //myDFPlayer.pause();
-      send_command(0x0E,1,0,0);  //Пауза
+      send_command(0x0E,FEEDBACK,0,0);  //Пауза
       mp3_stop = true;
       dawnflag_sound = 1;
      if (alarm_sound_on) {
         delay(mp3_delay);
         mp3_folder = 99;  // Папка будильника
         alarm_timer = millis();
-        send_command(0x06,1,0,0);  //Громкость
+        send_command(0x06,FEEDBACK,0,0);  //Громкость
         delay(mp3_delay);
         play_sound(mp3_folder);
         mp3_folder_last = mp3_folder;
@@ -137,11 +152,11 @@ void mp3_loop()   {
   }
   else {
       if (dawnflag_sound) {
-        send_command(0x06,1,0,eff_volume);  //Громкость
+        send_command(0x06,FEEDBACK,0,eff_volume);  //Громкость
         delay(mp3_delay);
         alarm_sound_flag = false;
         dawnflag_sound = 0;
-        send_command(0x0E,1,0,0);  //Пауза
+        send_command(0x0E,FEEDBACK,0,0);  //Пауза
         mp3_stop = true;
         delay(mp3_delay);
       }
@@ -155,24 +170,21 @@ void mp3_loop()   {
     }
   
   if (!mp3_stop && !set_mp3_play_now && !pause_on) {
-    //myDFPlayer.pause(); // Поставить воспроизведение на паузу
-    send_command(0x0E,1,0,0);  //Пауза
+    send_command(0x0E,FEEDBACK,0,0);  //Пауза
     pause_on = true;
-    //mp3_play_now = false;  
   }   
   if (!mp3_stop && set_mp3_play_now && pause_on) {
-    //myDFPlayer.start();
-    send_command(0x0D,1,0,0);  //Старт
+    send_command(0x0D,FEEDBACK,0,0);  //Старт
     pause_on = false;
-    //mp3_play_now = true;
   }
   
   
   if ((set_mp3_play_now) && (mp3_folder_last != mp3_folder)) {
         #ifdef MP3_DEBUG
+          LOG.print (F("mp3_folder_last = "));
+          LOG.println (mp3_folder_last);
           LOG.print (F("mp3_folder = "));
           LOG.println (mp3_folder);
-          LOG.println (mp3_folder_last);
         #endif   
     mp3_folder_last = mp3_folder;
     play_sound(mp3_folder);
@@ -188,7 +200,7 @@ int16_t send_command(int8_t cmd, uint8_t feedback, uint8_t dat1, uint8_t dat2)
   //mp3_send_buf[1] = 0xFF; 
   //mp3_send_buf[2] = 0x06; 
   mp3_send_buf[3] = cmd;  // Команда
-  mp3_send_buf[4] = feedback; // 0x00 = Без ответа, 0x01 = с ответом
+  mp3_send_buf[4] = feedback; // 0x00 = Без ответа, 0x01 = с ответом (подтверждением)
   mp3_send_buf[5] = dat1; // параметр 1
   mp3_send_buf[6] = dat2; // параметр 2
   //mp3_send_buf[7] = 0xEF;  
@@ -208,25 +220,32 @@ int16_t send_command(int8_t cmd, uint8_t feedback, uint8_t dat1, uint8_t dat2)
   LOG.println();
 #endif  //MP3_DEBUG
   
-  if ( feedback && (cmd < 0x30)) {
-      //delay (100);
-      return read_command (MP3_READ_TIMEOUT);
+  if (!feedback && (cmd < 0x30)) {
+      //Serial.println ("Нулевой");
+      return 0xFF00;
   }
-  if (cmd > 0x30) {
-      //delay (100);
-      if (read_command (MP3_READ_TIMEOUT) == -1) return -1;
-      //delay (100);
-      if (read_command (MP3_READ_TIMEOUT) == -1) return -1;
-      //Serial.print ("cmd > 30  buf[6] = ");
-      //Serial.print (mp3_receive_buf[6]);
-      return mp3_receive_buf[6];
+  else if ( feedback && (cmd < 0x30)) {
+        //Serial.println ("Первый");
+        return read_command (MP3_READ_TIMEOUT);
   }
-   return 0x7FFF;
+  else if (feedback && (cmd >= 0x30)) {
+        //Serial.println ("Второй");
+        if (read_command (MP3_READ_TIMEOUT) == -1) return -1;
+        if (read_command (MP3_READ_TIMEOUT) == -1) return -1;
+        return (((int16_t)mp3_receive_buf[5]) << 8) + mp3_receive_buf[6];
+      }
+  else if (!feedback && (cmd >= 0x30)) {
+        //Serial.println ("Третий");
+        if (read_command (MP3_READ_TIMEOUT) == -1) return -1;
+        return (((int16_t)mp3_receive_buf[5]) << 8) + mp3_receive_buf[6];
+      }
+    //Serial.println ("Ничего");
 }
 
 
-int8_t read_command (uint32_t mp3_read_timeout) {
+int16_t read_command (uint32_t mp3_read_timeout) {
     uint8_t tmp, flag = 0;
+    int16_t Answer = 0;
     uint32_t mp3_read_timer = millis();
     while ((tmp = mp3.read()) != 0x7E)
         if (millis() - mp3_read_timer > mp3_read_timeout) return -1;
@@ -248,8 +267,7 @@ int8_t read_command (uint32_t mp3_read_timeout) {
       }
       LOG.println();
     #endif  //MP3_DEBUG
-    
-    if ( mp3_receive_buf[2] == 6 && mp3_receive_buf[9] == 0xEF && mp3_receive_buf[3] != 0x40) return mp3_receive_buf[3];
+if ( mp3_receive_buf[2] == 6 && mp3_receive_buf[9] == 0xEF && mp3_receive_buf[3] != 0x40) return (((int16_t)mp3_receive_buf[5]) << 8) + mp3_receive_buf[6];
     else return -1;
 }
 #endif
