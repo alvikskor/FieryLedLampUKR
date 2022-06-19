@@ -147,12 +147,14 @@ if (stillUseNTP)
         hours = hour(currentLocalTime);                   // получаем значение часов
         last_minute = minute(currentLocalTime);                  // получаем значение минут
         clockTicker_blink();
+        if (last_minute == 1) getBrightnessForPrintTime();
         
     #ifdef MP3_TX_PIN
-    if (dawnFlag && dawnPosition >= 245) {
+    if (mp3_player_connect == 4 && dawnFlag && dawnPosition >= 245) {
         //Serial.println ("Alarm");
         first_entry = 1;
         advert_hour = true;
+        delay(mp3_delay);
         play_time_ADVERT();
         while (advert_flag) {
            play_time_ADVERT();
@@ -172,10 +174,11 @@ if (stillUseNTP)
     #ifdef MP3_TX_PIN
       if (minute_tmp != minute(currentLocalTime)) {
           minute_tmp = minute(currentLocalTime);
-          if (dawnFlag && dawnPosition >= 245) {
+          if (mp3_player_connect == 4 && dawnFlag && dawnPosition >= 245) {
              //Serial.println ("Alarm");
              first_entry = 1;
              advert_hour = true;
+             delay(mp3_delay);
              play_time_ADVERT();
              while (advert_flag) {
                  play_time_ADVERT();
@@ -395,7 +398,7 @@ String Get_Time(time_t LocalTime) {
 #ifdef TM1637_USE
 void clockTicker_blink()
 {
-  if (timeSynched) {  
+  if (timeSynched && !DisplayFlag) {  
   
   //tm1637_brightness ();
   if (dawnFlag)  //если рассвет - мигаем  часами

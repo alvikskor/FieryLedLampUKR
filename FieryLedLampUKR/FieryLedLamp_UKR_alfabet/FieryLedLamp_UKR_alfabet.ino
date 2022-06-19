@@ -207,6 +207,7 @@ uint8_t ml1, ml2, ml3;
 uint8_t mp3_folder=1;                // Текущая папка для воспроизведения.
 uint8_t alarm_sound_on =false;       // Включить/выключить звук будильника
 uint8_t alarm_volume;                // Громкость будильника
+uint8_t AlarmFolder;                 // Папка будильника
 uint8_t Equalizer;                   // Еквалайзер
 bool alarm_sound_flag =false;        // проигрывается ли сейчас будильник
 uint8_t dawnflag_sound = false;      // Звук не начал обслуживание рассвета. Если не true - звук обслуживает рассвет
@@ -340,6 +341,7 @@ void setup()  //================================================================
   eff_volume = jsonReadtoInt(configSetup, "vol");
   eff_sound_on = (jsonReadtoInt(configSetup, "on_sound")==0)? 0 : eff_volume;
   alarm_volume = jsonReadtoInt(configSetup, "alm_vol");
+  AlarmFolder = jsonReadtoInt(configSetup, "alm_fold");
   alarm_sound_on = jsonReadtoInt(configSetup, "on_alm_snd");
   day_advert_sound_on = jsonReadtoInt(configSetup,"on_day_adv");
   night_advert_sound_on = jsonReadtoInt(configSetup,"on_night_adv");

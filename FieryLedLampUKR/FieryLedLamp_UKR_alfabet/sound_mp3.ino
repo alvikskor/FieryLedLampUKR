@@ -32,15 +32,15 @@ void mp3_setup()   {
   }
   read_command (MP3_READ_TIMEOUT);
   #ifdef CHECK_MP3_CONNECTION
-    if ((tmp = send_command(0x48,1,0,0)) != -1) {              // Проверяем, есть ли файлы на карте и, если есть, то
+    if ((tmp = send_command(0x48,1,0,0)) != -1) {            // Проверяем, есть ли файлы на карте-48/на флешке-47 и, если есть, то
   #else
     tmp = send_command(0x48,FEEDBACK,0,0);
-    if (true) {                                               // Не проверяем, есть ли связь с МР3 плеером
+    if (true) {                                              // Не проверяем, есть ли связь с МР3 плеером
   #endif  //CHECK_MP3_CONNECTION
         delay(mp3_delay);
-        send_command(0x07,FEEDBACK,0,Equalizer);                // Устанавливаем эквалайзер в положение Equalizer
+        send_command(0x07,FEEDBACK,0,Equalizer);             // Устанавливаем эквалайзер в положение Equalizer
         delay(mp3_delay);
-        send_command(0x09,FEEDBACK,0,1);                // Устанавливаем источником SD-карту
+        send_command(0x09,FEEDBACK,0,1);                     // Устанавливаем источником 0-Flash/1-SD-карту
         delay(mp3_delay);
         send_command(6,FEEDBACK,0,eff_volume);               // Устанавливаем громкость равной eff_volume (от 0 до 30)
         mp3_player_connect = 4;
@@ -59,7 +59,7 @@ void play_time_ADVERT()   {
            first_entry = 3;
            send_command(0x06,FEEDBACK,0,0);
            delay(mp3_delay);
-           if (pause_on || mp3_stop) {
+           if ((pause_on || mp3_stop) && !alarm_sound_flag) {  //+++++-----------+++++++++---------+++++++++
               send_command(0x0D,FEEDBACK,0,0);  //Старт
               delay(ADVERT_TIMER_1);
            }
@@ -107,7 +107,6 @@ void play_sound(uint8_t folder)   {
         delay(mp3_delay);
         send_command(0x0E,FEEDBACK,0,0);  //Пауза
         mp3_stop = true;
-        //mp3_play_now =false;
     }
     else {
         delay(mp3_delay);
@@ -140,10 +139,9 @@ void mp3_loop()   {
       dawnflag_sound = 1;
      if (alarm_sound_on) {
         delay(mp3_delay);
-        mp3_folder = 99;  // Папка будильника
+        mp3_folder = AlarmFolder;  // Папка будильника
         alarm_timer = millis();
         send_command(0x06,FEEDBACK,0,0);  //Громкость
-        delay(mp3_delay);
         play_sound(mp3_folder);
         mp3_folder_last = mp3_folder;
         alarm_sound_flag = true;
