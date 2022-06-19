@@ -4,10 +4,16 @@
   #define ADVERT_TIMER_1 500UL
   #define ADVERT_TIMER_2 1900UL
   #define ADVERT_TIMER_3 500UL
+  #define MP3_DELAY 250
+  #define mp3_delay 50                 // Задержка между командами плееру
+
 #else
   #define ADVERT_TIMER_1 700UL
   #define ADVERT_TIMER_2 2200UL
   #define ADVERT_TIMER_3 1200UL
+  #define MP3_DELAY 1600
+  #define mp3_delay 100                // Задержка между командами плееру
+
 #endif
 #define MP3_READ_TIMEOUT  (500UL)
 /*
@@ -30,25 +36,35 @@ void mp3_setup()   {
       mp3_player_connect = 2;
       return;
   }
-  read_command (MP3_READ_TIMEOUT);
-  #ifdef CHECK_MP3_CONNECTION
-    if ((tmp = send_command(0x48,1,0,0)) != -1) {            // Проверяем, есть ли файлы на карте-48/на флешке-47 и, если есть, то
-  #else
-    tmp = send_command(0x48,FEEDBACK,0,0);
-    if (true) {                                              // Не проверяем, есть ли связь с МР3 плеером
+  tmp = read_command (MP3_READ_TIMEOUT);
+  send_command(6,FEEDBACK,0,0);                     // Устанавливаем громкость равной 0 (от 0 до 30)
+  delay(mp3_delay);
+  #ifndef CHECK_MP3_CONNECTION
+    if (tmp == -1) tmp = 0;                         // Не проверяем, есть ли связь с МР3 плеером
   #endif  //CHECK_MP3_CONNECTION
+  if (tmp != -1) {                                  // Проверяем, есть ли связь с плеером и, если есть, то...
+      if (tmp == 1 || tmp == 3) {
+          send_command(0x09,FEEDBACK,0,1);          // Устанавливаем источником Flash
+          delay(MP3_DELAY);                         // ----------????????????---------
+      }
+      if (tmp == 2) {
+          send_command(0x09,FEEDBACK,0,2);          // Устанавливаем источником SDкарту
+          delay(mp3_delay);
+      }
+      //read_command (MP3_READ_TIMEOUT);
+      send_command(0x0E,FEEDBACK,0,0);              //Пауза
+      delay(mp3_delay);
         delay(mp3_delay);
         send_command(0x07,FEEDBACK,0,Equalizer);             // Устанавливаем эквалайзер в положение Equalizer
         delay(mp3_delay);
-        send_command(0x09,FEEDBACK,0,1);                     // Устанавливаем источником 0-Flash/1-SD-карту
-        delay(mp3_delay);
         send_command(6,FEEDBACK,0,eff_volume);               // Устанавливаем громкость равной eff_volume (от 0 до 30)
         mp3_player_connect = 4;
-        LOG.print (F("mp3 плеєр підключено. SD картка встановлена. Файлів на SD картці "));
-        LOG.println (tmp);
-        //Serial.print (FEEDBACK);
+      LOG.print (F("\nMP3 плеєр підключено. "));
+      if (tmp == 2) LOG.println (F("Встановлено SD-картку"));
+      if (tmp == 1 || tmp == 3) LOG.println (F("Встановлено Флешку"));
+      if (tmp == 0) LOG.println (F("SD-картку або Флешку не встановлено"));
     }
-    else { LOG.println (F("SD картка не встановлена або МР3 плеєр не підключено")); mp3_player_connect = 0; }
+    else { LOG.println (F("\nSD-картка ( флешка ) не встановлена або МР3 плеєр не підключено")); mp3_player_connect = 0; }
 }
 
 void play_time_ADVERT()   {

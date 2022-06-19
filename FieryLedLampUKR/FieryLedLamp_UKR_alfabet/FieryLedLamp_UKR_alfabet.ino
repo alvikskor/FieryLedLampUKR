@@ -203,7 +203,6 @@ uint8_t ml1, ml2, ml3;
 #endif //USE_MULTIPLE_LAMPS_CONTROL
 
 #ifdef MP3_TX_PIN
-#define mp3_delay 100                // Задержка между командами плееру
 uint8_t mp3_folder=1;                // Текущая папка для воспроизведения.
 uint8_t alarm_sound_on =false;       // Включить/выключить звук будильника
 uint8_t alarm_volume;                // Громкость будильника
