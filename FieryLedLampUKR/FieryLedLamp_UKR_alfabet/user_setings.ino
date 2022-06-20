@@ -55,6 +55,7 @@ void User_setings ()  {
  HTTP.on("/vol", handle_volume);  // Громкость озвучивания эффектов
  HTTP.on("/on_alm_snd", handle_alarm_on_sound);  // Включить/Выключить звук будильника
  HTTP.on("/alm_vol", handle_alarm_volume);  // Громкость озвучивания будильника
+ HTTP.on("/alm_fold_sel", handle_alarm_fold_sel);  // Вибір папки для будильника
  HTTP.on("/on_day_adv", handle_day_advert_on_sound);  // Включить/Выключить озвучивание времени днём
  HTTP.on("/on_night_adv", handle_night_advert_on_sound);  // Включить/Выключить озвучивание времени ночью
  HTTP.on("/day_vol", handle_day_advert_volume);  // Громкость озвучивания времени днём
@@ -162,7 +163,7 @@ void handle_run_text ()  {
     uint8_t i=0;
     while (TextTicker[i]!=0)
     {
-        LOG.print (F(TextTicker[i],HEX));
+        LOG.print (TextTicker[i],HEX);
         LOG.print (' ');
         i++;
     }
@@ -1129,6 +1130,19 @@ void handle_equalizer ()   {
     Equalizer = HTTP.arg("eq").toInt();
     jsonWrite(configSetup, "eq", Equalizer);
     send_command(0x07,FEEDBACK,0,Equalizer);  // Еквалайзер
+    HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
+}
+
+void handle_alarm_fold_sel ()   {
+    AlarmFolder = HTTP.arg("alm_fold").toInt();
+    jsonWrite(configSetup, "alm_fold", AlarmFolder);
+    save_file_changes = 1;
+    timeout_save_file_changes = millis();
+    if (alarm_sound_flag) {
+        mp3_folder = AlarmFolder;  // Папка будильника
+        play_sound(mp3_folder);
+        mp3_folder_last = mp3_folder;
+    }
     HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
 }
 
