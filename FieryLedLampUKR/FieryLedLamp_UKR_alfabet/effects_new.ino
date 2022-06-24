@@ -1078,7 +1078,7 @@ const uint8_t *ptr  = anim;                     // Current pointer into animatio
 const uint8_t  w    = 7;                        // image width
 const uint8_t  h    = 15;                       // image height
 uint8_t        img[w * h];                      // Buffer for rendering image
-uint8_t        deltaX = CENTER_X_MINOR - 4;     // position img
+uint8_t        deltaX = CENTER_X_MAJOR - 4;     // position img
 uint8_t last_brightness;
 void FeatherCandleRoutine() {
 #if defined(USE_RANDOM_SETS_IN_APP) || defined(RANDOM_SETTINGS_IN_CYCLE_MODE)
@@ -1094,7 +1094,7 @@ void FeatherCandleRoutine() {
     trackingObjectState[0] = low_level;
     trackingObjectState[1] = low_level;
     trackingObjectState[2] = low_level;
-    trackingObjectState[4] = CENTER_X_MINOR;
+    trackingObjectState[4] = CENTER_X_MAJOR;
     loadingFlag = false;
   }
 
@@ -1124,12 +1124,12 @@ void FeatherCandleRoutine() {
     if ((HEIGHT < 15) || (WIDTH < 9)) {
       // for small matrix -----
       if (y % 2 == 0) {
-        leds[XY(CENTER_X_MINOR - 1, 7)] = CHSV(color, 255U, 55 + random8(200));
-        leds[XY(CENTER_X_MINOR, 6)] = CHSV(color, 255U, 160 + random8(90));
-        leds[XY(CENTER_X_MINOR + 1, 6)] = CHSV(color, 255U, 205 + random8(50));
-        leds[XY(CENTER_X_MINOR - 1, 5)] = CHSV(color, 255U, 155 + random8(100));
-        leds[XY(CENTER_X_MINOR, 5)] = CHSV(color - 10U , 255U, 120 + random8(130));
-        leds[XY(CENTER_X_MINOR, 4)] = CHSV(color - 10U , 255U, 100 + random8(120));
+        leds[XY(CENTER_X_MAJOR - 1, 7)] = CHSV(color, 255U, 55 + random8(200));
+        leds[XY(CENTER_X_MAJOR, 6)] = CHSV(color, 255U, 160 + random8(90));
+        leds[XY(CENTER_X_MAJOR + 1, 6)] = CHSV(color, 255U, 205 + random8(50));
+        leds[XY(CENTER_X_MAJOR - 1, 5)] = CHSV(color, 255U, 155 + random8(100));
+        leds[XY(CENTER_X_MAJOR, 5)] = CHSV(color - 10U , 255U, 120 + random8(130));
+        leds[XY(CENTER_X_MAJOR, 4)] = CHSV(color - 10U , 255U, 100 + random8(120));
         DrawLine(0, 2U, WIDTH - 1, 2U, 0x000000);
       }
     } else {
@@ -1176,7 +1176,7 @@ void FeatherCandleRoutine() {
         } else {
           hue++;
           // set random position drop of wax
-          trackingObjectState[4] = CENTER_X_MINOR - 3 + random8(6);
+          trackingObjectState[4] = CENTER_X_MAJOR - 3 + random8(6);
         }
         break;
     }
@@ -1889,9 +1889,9 @@ void Firework() {
     /* ------------------------------------------------------ */
 
     uint8_t saturation = (step > (DOT_EXPLOSION - 2U)) ? 192U : 20U;
-    uint8_t rndPos = 3U * deltaHue2 * 0.5;
-    drawPixelXY(CENTER_X_MINOR + rndPos, step,  CHSV(50U, saturation, 80U));                 // first
-    drawPixelXY(CENTER_X_MAJOR + 1 - rndPos, step - HORIZONT,  CHSV(50U, saturation, 80U));  // second
+    //uint8_t rndPos = deltaHue2;  //uint8_t rndPos = 3U * deltaHue2 * 0.5;
+    drawPixelXY(CENTER_X_MINOR + deltaHue2, step,  CHSV(50U, saturation, 80U));                 // first
+    drawPixelXY(CENTER_X_MAJOR - deltaHue2, step - HORIZONT,  CHSV(50U, saturation, 80U));  // second
     /* sky brightness */
     if (hue > 2U) {
       hue -= 1U;
@@ -1907,7 +1907,7 @@ void Firework() {
   if (step >= (HEIGHT * 2.5)) {
     step = 0U;
     FPSdelay = FPS_DELAY;
-    if (modes[currentMode].Scale == 0) {
+    if (modes[currentMode].Scale <= 1) {
       deltaHue2++;
     }
     if (deltaHue2 >= 4U) deltaHue2 = 0U;  // next Firework type
