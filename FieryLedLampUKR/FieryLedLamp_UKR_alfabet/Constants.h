@@ -121,7 +121,8 @@ unsigned int NIGHT_HOURS_BRIGHTNESS;                        // Не удаляй
 
 #define COLOR_ORDER           (GRB)                         // порядок цветов на ленте. Если цвет отображается некорректно - меняйте. Начать можно с RGB
 
-#define MATRIX_TYPE           (0U)                          // тип матрицы: 0 - зигзаг, 1 - параллельная
+uint8_t ORIENTATION;
+uint8_t MATRIX_TYPE = 0; //#define MATRIX_TYPE           (0U)                          // тип матрицы: 0 - зигзаг, 1 - параллельная
 #define CONNECTION_ANGLE      (0U)                          // угол подключения: 0 - левый нижний, 1 - левый верхний, 2 - правый верхний, 3 - правый нижний
 #define STRIP_DIRECTION       (0U)                          // направление ленты из угла: 0 - вправо, 1 - вверх, 2 - влево, 3 - вниз
                                                             // при неправильной настройке матрицы вы получите предупреждение "Wrong matrix parameters! Set to default"

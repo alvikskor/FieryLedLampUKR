@@ -217,6 +217,7 @@ uint8_t day_advert_volume;           // Дневная Громкость озв
 uint8_t night_advert_volume;         // Ночная Громкость озвучивания времени
 bool day_advert_sound_on;            // Вкл.Выкл озвучивания времени днём
 bool night_advert_sound_on;          // Вкл.Выкл озвучивания времени ночью
+bool alarm_advert_sound_on;          // Вкл.Выкл озвучивания времени будильником
 uint8_t mp3_player_connect = 0;      // Плеер не подключен. true - подключен.
 uint8_t mp3_folder_last=255;           // Предыдущая папка для воспроизведения
 bool set_mp3_play_now=false;         // Указывает, надо ли играть сейчас мелодии
@@ -345,9 +346,16 @@ void setup()  //================================================================
   day_advert_sound_on = jsonReadtoInt(configSetup,"on_day_adv");
   night_advert_sound_on = jsonReadtoInt(configSetup,"on_night_adv");
   day_advert_volume = jsonReadtoInt(configSetup,"day_vol");
+  alarm_advert_sound_on = jsonReadtoInt(configSetup,"on_alm_adv");
   night_advert_volume = jsonReadtoInt(configSetup,"night_vol");
   Equalizer = jsonReadtoInt(configSetup, "eq");
   #endif //MP3_TX_PIN
+
+
+
+  MATRIX_TYPE = jsonReadtoInt(configSetup, "m_t");
+  ORIENTATION = jsonReadtoInt(configSetup, "m_o");
+
 
 
   // TELNET
