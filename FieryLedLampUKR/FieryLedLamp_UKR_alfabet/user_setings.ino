@@ -58,6 +58,7 @@ void User_setings ()  {
  HTTP.on("/alm_fold_sel", handle_alarm_fold_sel);  // Вибір папки для будильника
  HTTP.on("/on_day_adv", handle_day_advert_on_sound);  // Включить/Выключить озвучивание времени днём
  HTTP.on("/on_night_adv", handle_night_advert_on_sound);  // Включить/Выключить озвучивание времени ночью
+ HTTP.on("/on_alm_adv", handle_alarm_advert_sound_on);  // Включить/Выключить озвучивание времени будильником
  HTTP.on("/day_vol", handle_day_advert_volume);  // Громкость озвучивания времени днём
  HTTP.on("/night_vol", handle_night_advert_volume);  // Громкость озвучивания времени ночью
  HTTP.on("/sound_set", handle_sound_set);  // Вибір прив'язаних папок для озвучування ефектів
@@ -66,6 +67,9 @@ void User_setings ()  {
  HTTP.on("/fold_sel", handle_folder_select);  // Вибір папки озвучування на головній сторінці
  HTTP.on("/eq", handle_equalizer);  // Еквалайзер
  #endif
+
+ HTTP.on("/m_t", handle_matrix_tipe);  //
+ HTTP.on("/m_o", handle_matrix_orientation);  // 
 
   // --------------------Получаем SSID со страницы
   HTTP.on("/ssid", HTTP_GET, []() {
@@ -620,7 +624,7 @@ void handle_cycle_allwase ()  {  // Запускать режим цыкл по�
 
 void handle_eff_all ()   {  //Выбрать все эффекты
     char i[4];
-    String configCycle = readFile("cycle_config.json", 1024); 
+    String configCycle = readFile("cycle_config.json", 2048); 
     // подготовка  строк с именами полей json 
     ESP.wdtFeed();
     for (uint8_t k=0; k<MODE_AMOUNT; k++) {
@@ -636,7 +640,7 @@ void handle_eff_all ()   {  //Выбрать все эффекты
 
 void handle_eff_clr ()   {  //очистить все эффекты
       char i[4];
-      String configCycle = readFile("cycle_config.json", 1024); 
+      String configCycle = readFile("cycle_config.json", 2048); 
       // подготовка  строк с именами полей json 
       ESP.wdtFeed();
       for (uint8_t k=0; k<MODE_AMOUNT; k++)
@@ -653,7 +657,7 @@ void handle_eff_clr ()   {  //очистить все эффекты
 
 void handle_cycle_set ()  {  // Выбор эффектов для Цикла 
       char i[4];
-      String configCycle = readFile("cycle_config.json", 1024); 
+      String configCycle = readFile("cycle_config.json", 2048); 
       #ifdef GENERAL_DEBUG
       LOG.println (F("\nВыбор эффектов для Цикла"));
       LOG.println(configCycle);
@@ -687,7 +691,7 @@ void handle_cycle_set ()  {  // Выбор эффектов для Цикла
 void cycle_get ()  { // запись выбранных эффектов в файл питания
       char i[4];
 	  bool cycle_change = false;
-      String configCycle = readFile("cycle_config.json", 1024); 
+      String configCycle = readFile("cycle_config.json", 2048); 
       #ifdef GENERAL_DEBUG
       LOG.println (F("\nВыбор эффектов для Цикла"));
       LOG.println(configCycle);
@@ -1038,6 +1042,14 @@ void handle_night_advert_on_sound ()   {
     HTTP.send(200, "text/plain", "OK");
 }
 
+void handle_alarm_advert_sound_on()   {
+    alarm_advert_sound_on = HTTP.arg("on_alm_adv").toInt();
+    jsonWrite(configSetup, "on_alm_adv", alarm_advert_sound_on);
+    timeout_save_file_changes = millis();
+    bitSet (save_file_changes, 0);
+    HTTP.send(200, "text/plain", "OK");
+}
+
 void handle_day_advert_volume ()   {
     day_advert_volume = HTTP.arg("day_vol").toInt();
     jsonWrite(configSetup, "day_vol", day_advert_volume);
@@ -1058,7 +1070,7 @@ void handle_night_advert_volume ()   {
 
 void handle_sound_set ()   {    // Выбор папок для озвучивания эффектов
     char i[4];
-    String configSound = readFile("sound_config.json", 1280); 
+    String configSound = readFile("sound_config.json", 2048); 
     #ifdef GENERAL_DEBUG
     LOG.println (F("\nВыбор папок для озвучивания эффектов"));
     LOG.println(configSound);
@@ -1136,7 +1148,7 @@ void handle_equalizer ()   {
 void handle_alarm_fold_sel ()   {
     AlarmFolder = HTTP.arg("alm_fold").toInt();
     jsonWrite(configSetup, "alm_fold", AlarmFolder);
-    save_file_changes = 1;
+    bitSet (save_file_changes, 0);
     timeout_save_file_changes = millis();
     if (alarm_sound_flag) {
         mp3_folder = AlarmFolder;  // Папка будильника
@@ -1147,6 +1159,27 @@ void handle_alarm_fold_sel ()   {
 }
 
 #endif //MP3_TX_PIN
+  
+
+
+void handle_matrix_tipe ()   {
+    MATRIX_TYPE = HTTP.arg("m_t").toInt();
+    jsonWrite(configSetup, "m_t", MATRIX_TYPE);
+    bitSet (save_file_changes, 0);
+    timeout_save_file_changes = millis();   
+    HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
+}
+
+void handle_matrix_orientation ()   {
+    
+    ORIENTATION = HTTP.arg("m_o").toInt();
+    jsonWrite(configSetup, "m_o", ORIENTATION);
+    bitSet (save_file_changes, 0);
+    timeout_save_file_changes = millis();   
+    HTTP.send(200, "application/json", "{\"should_refresh\": \"true\"}");
+}
+
+
   
 bool FileCopy (String SourceFile , String TargetFile)   {
     File S_File = SPIFFS.open( SourceFile, "r");

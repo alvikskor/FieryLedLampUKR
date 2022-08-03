@@ -150,7 +150,7 @@ if (stillUseNTP)
         if (last_minute == 1) getBrightnessForPrintTime();
         
     #ifdef MP3_TX_PIN
-    if (mp3_player_connect == 4 && dawnFlag && dawnPosition >= 245) {
+    if (alarm_advert_sound_on && mp3_player_connect == 4 && dawnFlag && dawnPosition >= 245) {
         //Serial.println ("Alarm");
         first_entry = 1;
         advert_hour = true;
@@ -174,7 +174,8 @@ if (stillUseNTP)
     #ifdef MP3_TX_PIN
       if (minute_tmp != minute(currentLocalTime)) {
           minute_tmp = minute(currentLocalTime);
-          if (mp3_player_connect == 4 && dawnFlag && dawnPosition >= 245) {
+          if (minute_tmp == 1) getBrightnessForPrintTime();
+          if (alarm_advert_sound_on && mp3_player_connect == 4 && dawnFlag && dawnPosition >= 245) {
              //Serial.println ("Alarm");
              first_entry = 1;
              advert_hour = true;

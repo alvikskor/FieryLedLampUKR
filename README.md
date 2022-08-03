@@ -1,3 +1,5 @@
+# Ця версія застаріла і не підтримується. Нова версія з кількома мовами інтерфейсу представлена тут: https://github.com/alvikskor/FieryLedLampMultilingual
+# This version is obsolete and no longer supported. The new version with several interface languages is presented here: https://github.com/alvikskor/FieryLedLampMultilingual
 # FieryLedLampUKR
 
 Led lamp with web interface and Ukrainian language

@@ -33,6 +33,7 @@ uint32_t getPixColorXY(uint8_t x, uint8_t y)
 }
 
 // ************* НАСТРОЙКА МАТРИЦЫ *****
+/*
 #if (CONNECTION_ANGLE == 0 && STRIP_DIRECTION == 0)
 #define _WIDTH WIDTH
 #define THIS_X x
@@ -82,11 +83,50 @@ uint32_t getPixColorXY(uint8_t x, uint8_t y)
 #pragma message "Wrong matrix parameters! Set to default"
 
 #endif
-
+*/
 // получить номер пикселя в ленте по координатам
 // библиотека FastLED тоже использует эту функцию
 uint16_t XY(uint8_t x, uint8_t y)
 {
+ uint8_t THIS_X;
+ uint8_t THIS_Y;
+ uint8_t _WIDTH = WIDTH;
+ 
+ switch (ORIENTATION)
+ {
+  case 0: THIS_X = x;                   //CONNECTION_ANGLE == 0 && STRIP_DIRECTION == 0
+          THIS_Y =y;
+          break;
+  case 1: _WIDTH = HEIGHT;              //CONNECTION_ANGLE == 0 && STRIP_DIRECTION == 1
+          THIS_X = y;
+          THIS_Y = x;
+          break;
+  case 2: THIS_X = x;                   //CONNECTION_ANGLE == 1 && STRIP_DIRECTION == 0
+          THIS_Y = (HEIGHT - y - 1);
+          break;
+  case 3: _WIDTH = HEIGHT;              //CONNECTION_ANGLE == 1 && STRIP_DIRECTION == 3
+          THIS_X = (HEIGHT - y - 1);
+          THIS_Y = x;
+          break;
+  case 4: THIS_X = (WIDTH - x - 1);     //CONNECTION_ANGLE == 2 && STRIP_DIRECTION == 2
+          THIS_Y = (HEIGHT - y - 1);
+          break;
+  case 5: _WIDTH = HEIGHT;              //CONNECTION_ANGLE == 2 && STRIP_DIRECTION == 3
+          THIS_X = (HEIGHT - y - 1);
+          THIS_Y = (WIDTH - x - 1);
+          break;
+  case 6: THIS_X = (WIDTH - x - 1);     //CONNECTION_ANGLE == 3 && STRIP_DIRECTION == 2
+          THIS_Y =y;
+          break;
+  case 7: _WIDTH = HEIGHT;              //CONNECTION_ANGLE == 3 && STRIP_DIRECTION == 1
+          THIS_X = y;
+          THIS_Y = (WIDTH - x - 1);
+          break;
+  default : THIS_X = x;                 // !! смотрите инструкцию: https://alexgyver.ru/wp-content/uploads/2018/11/scheme3.jpg
+            THIS_Y =y;                  // !! такого сочетания CONNECTION_ANGLE и STRIP_DIRECTION не бывает
+            break;
+ }
+ 
   if (!(THIS_Y & 0x01) || MATRIX_TYPE)               // Even rows run forwards
     return (THIS_Y * _WIDTH + THIS_X);
   else                                                  
